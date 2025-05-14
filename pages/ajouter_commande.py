@@ -154,6 +154,8 @@ if submit_button:
         resultats = cursor.fetchall()
         service_ids = resultats[0][0]
         # Commande
+        st.write("Données à insérer :", (client_id, date_commande, date_retour_prevue, montant_total, remise, adresse_livraison, statut_commande, service_ids))
+
         cursor.execute("""
             INSERT INTO Commandes (client_id, date_commande, date_retour_prevue, montant_total, remise, adress_livraison, statut, service_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
