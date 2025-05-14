@@ -144,14 +144,13 @@ if submit_button:
             client_id = cursor.lastrowid
 
         # Fidélité bonus
-        cursor.execute("SELECT points_fidelite FROM Clients WHERE client_id = ?", (client_id,))
+        cursor.execute("SELECT points_fidelite FROM Clients WHERE client_id = ?", (client_id))
         points = cursor.fetchone()
         if points and points[0] >= 50:
             remise += 500
             st.info("🎁 Bonus fidélité : 500 FCFA appliqué automatiquement !")
         #id service
-        query = f"SELECT service_id FROM Services WHERE nom_service =?", (services_selectionnes[0])
-        cursor.execute(query)
+        cursor.execute("SELECT service_id FROM Services WHERE nom_service = ?", (services_selectionnes[0]))
         resultats = cursor.fetchall()
         service_ids = resultats[0][0]
         # Commande
