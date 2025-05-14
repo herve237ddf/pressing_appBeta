@@ -29,7 +29,7 @@ if "client_data" not in st.session_state:
     st.session_state.client_data = None
 
 # Titre
-st.title("🧾 Ajouter une Commande")
+st.title("📟 Ajouter une Commande")
 
 # Type de client
 st.subheader("👤 Type de Client")
@@ -107,7 +107,6 @@ with st.form(key="order_form"):
                 "taille": taille
             })
 
-
         remise = st.number_input("Remise (facultative)", min_value=0.0, step=100.0)
         montant_final = montant_total - remise
         st.success(f"💵 Montant Final : {montant_final} FCFA")
@@ -136,7 +135,7 @@ if submit_button:
             elif not validate_telephone(telephone):
                 st.error("❗ Téléphone invalide (ex: +237 6xx xxx xxx).")
                 st.stop()
-    
+
             cursor.execute("""
                 INSERT INTO Clients (nom, prenom, adresse, telephone, email, date_inscription)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -144,22 +143,19 @@ if submit_button:
             client_id = cursor.lastrowid
 
         # Fidélité bonus
-        cursor.execute("SELECT points_fidelite FROM Clients WHERE client_id = ?", (client_id))
+        cursor.execute("SELECT points_fidelite FROM Clients WHERE client_id = ?", (client_id,))
         points = cursor.fetchone()
         if points and points[0] >= 50:
             remise += 500
             st.info("🎁 Bonus fidélité : 500 FCFA appliqué automatiquement !")
-        #id service
-        cursor.execute("SELECT service_id FROM Services WHERE nom_service = ?", (services_selectionnes[0],))
-        resultats = cursor.fetchall()
-        service_ids = resultats[0][0]
-        # Commande
-        st.write("Données à insérer :", (client_id, date_commande, date_retour_prevue, montant_total, remise, adresse_livraison, statut_commande, service_ids))
+
+        # On prend le premier service comme id principal de la commande (peut être amélioré)
+        service_id_principal = services_selectionnes[0]["service_id"] if services_selectionnes else None
 
         cursor.execute("""
             INSERT INTO Commandes (client_id, date_commande, date_retour_prevue, montant_total, remise, adress_livraison, statut, service_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (client_id, date_commande, date_retour_prevue, montant_total, remise, adresse_livraison, statut_commande, service_ids))
+        """, (client_id, date_commande.strftime('%Y-%m-%d'), date_retour_prevue.strftime('%Y-%m-%d'), montant_total, remise, adresse_livraison, statut_commande, service_id_principal))
         commande_id = cursor.lastrowid
 
         # Articles
@@ -173,8 +169,6 @@ if submit_button:
 
         conn.commit()
         st.success("✅ Commande enregistrée avec succès !")
-
-        # Réinitialisation
         st.session_state.client_data = None
 
     except Exception as e:
