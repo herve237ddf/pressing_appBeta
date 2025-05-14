@@ -150,8 +150,7 @@ if submit_button:
             remise += 500
             st.info("🎁 Bonus fidélité : 500 FCFA appliqué automatiquement !")
         #id service
-        placeholders = ','.join('?' for _ in services_selectionnes)
-        query = f"SELECT service_id FROM Services WHERE nom_service IN ({placeholders})"
+        query = f"SELECT service_id FROM Services WHERE nom_service =?", (services_selectionnes[0]["service_id"],)
         cursor.execute(query, services_selectionnes)
         resultats = cursor.fetchall()
         service_ids = resultats[0][0]
