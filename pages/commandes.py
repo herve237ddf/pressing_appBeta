@@ -61,23 +61,22 @@ if commandes:
     if commande_id:
         st.subheader(f"🧾 Détails de la commande {commande_id}")
 
+        # Récupérer les détails des articles pour la commande sélectionnée
         query_details = '''
             SELECT 
-                a.type_article, a.matiere, a.couleur, a.marque, a.taille,
-                s.nom_service, ls.quantite, ls.prix_unitaire
+                a.type_article, a.matiere, a.couleur, a.marque, a.taille, 
+                a.taches, a.prix, a.instructions_speciales, a.type_article
             FROM Articles a
-            JOIN Commandes c ON a.commande_id = c.commande_id
-            LEFT JOIN Lignes_Commande_Services ls ON c.commande_id = ls.commande_id
-            LEFT JOIN Services s ON ls.service_id = s.service_id
-            WHERE c.commande_id = ?
+            WHERE a.commande_id = ?
         '''
         cursor.execute(query_details, (commande_id,))
         details = cursor.fetchall()
 
         if details:
+            # Convertir les résultats en DataFrame
             df_details = pd.DataFrame(details, columns=[
-                "Type Article", "Matière", "Couleur", "Marque", "Taille",
-                "Service", "Quantité", "Prix Unitaire"
+                "Type Article", "Matière", "Couleur", "Marque", "Taille", 
+                "Taches", "Prix", "Instructions Spéciales", "Type Article"
             ])
             st.dataframe(df_details)
         else:

@@ -29,6 +29,8 @@ if "client" not in st.session_state:
     st.session_state.client = None
 if "articles" not in st.session_state:
     st.session_state.articles = None
+if "paiements" not in st.session_state:
+    st.session_state.paiements = []
 
 st.title("💳 Paiement et Facturation")
 
@@ -68,8 +70,7 @@ if st.button("Rechercher la commande"):
         cursor.execute("""
             SELECT matiere, couleur, marque, taille, taches, prix, instructions_speciales, type_article
             FROM Articles 
-            WHERE commande_id = ?
-        """, (id_commande,))
+            WHERE commande_id = ?""", (id_commande,))
         articles = cursor.fetchall()
         if articles:
             st.subheader("🧺 Détail de la commande")
@@ -82,10 +83,10 @@ if st.button("Rechercher la commande"):
     else:
         st.error("❌ Commande non trouvée.")
 
+# Section pour le paiement
 if st.session_state.commande:
-    # Paiement
     st.subheader("💰 Enregistrer le paiement")
-    montant = st.session_state.commande[5]  # Montant de la commande
+    montant = st.session_state.commande[3]  # Montant de la commande
     mode = st.selectbox("Mode de paiement", ["Espèces", "Orange Money", "Mobile Money", "Carte Bancaire"])
 
     if st.button("Valider le paiement"):
@@ -95,6 +96,15 @@ if st.session_state.commande:
             VALUES (?, ?, ?, ?)""",
             (st.session_state.commande[0], montant, date_paiement, mode))
         conn.commit()
+
+        # Ajouter le paiement à la session
+        st.session_state.paiements.append({
+            "id_commande": st.session_state.commande[0],
+            "montant": montant,
+            "date_paiement": date_paiement,
+            "mode_paiement": mode
+        })
+
         st.success("✅ Paiement enregistré avec succès.")
 
         # Facture
@@ -113,6 +123,14 @@ if st.session_state.commande:
         st.write("**Détails des articles :**")
         for art in st.session_state.articles:
             st.write(f"- {art[0]} | Tache : {art[4]} | Prix : {art[5]}")
+
+# Affichage de la liste des paiements
+st.subheader("🧾 Liste des paiements effectués")
+if st.session_state.paiements:
+    for paiement in st.session_state.paiements:
+        st.write(f"**Commande #{paiement['id_commande']}** - Montant : {paiement['montant']} - Date : {paiement['date_paiement']} - Mode : {paiement['mode_paiement']}")
+else:
+    st.write("Aucun paiement effectué pour le moment.")
 
 # Fermeture de la connexion
 conn.close()
