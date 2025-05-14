@@ -107,6 +107,7 @@ with st.form(key="order_form"):
                 "taille": taille
             })
 
+
         remise = st.number_input("Remise (facultative)", min_value=0.0, step=100.0)
         montant_final = montant_total - remise
         st.success(f"💵 Montant Final : {montant_final} FCFA")
@@ -135,6 +136,7 @@ if submit_button:
             elif not validate_telephone(telephone):
                 st.error("❗ Téléphone invalide (ex: +237 6xx xxx xxx).")
                 st.stop()
+    
             cursor.execute("""
                 INSERT INTO Clients (nom, prenom, adresse, telephone, email, date_inscription)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -147,12 +149,17 @@ if submit_button:
         if points and points[0] >= 50:
             remise += 500
             st.info("🎁 Bonus fidélité : 500 FCFA appliqué automatiquement !")
-
+        #id service
+        placeholders = ','.join('?' for _ in services_selectionnes)
+        query = f"SELECT service_id FROM Service WHERE nom_service IN ({placeholders})"
+        cursor.execute(query, services_selectionnes)
+        resultats = cursor.fetchall()
+        service_ids = resultats[0][0]
         # Commande
         cursor.execute("""
-            INSERT INTO Commandes (client_id, date_commande, date_retour_prevue, montant_total, remise, adress_livraison, statut)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (client_id, date_commande, date_retour_prevue, montant_total, remise, adresse_livraison, statut_commande))
+            INSERT INTO Commandes (client_id, date_commande, date_retour_prevue, montant_total, remise, adress_livraison, statut, service_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (client_id, date_commande, date_retour_prevue, montant_total, remise, adresse_livraison, statut_commande, service_ids))
         commande_id = cursor.lastrowid
 
         # Articles
