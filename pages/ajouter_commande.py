@@ -80,6 +80,7 @@ with st.form(key="order_form"):
         selected_services = st.multiselect("🛠️ Sélectionner les Services", noms_services_disponibles)
         services_selectionnes = []
         montant_total = 0
+        quantite_totale = 0  # 🔧 Nouvelle variable
 
         for service_nom in selected_services:
             st.subheader(f"🧺 {service_nom}")
@@ -93,6 +94,7 @@ with st.form(key="order_form"):
             service_id, prix_unitaire = service_dict[service_nom]
             total_service = quantite * prix_unitaire
             montant_total += total_service
+            quantite_totale += quantite  # ✅ Ajout au total
 
             st.info(f"💰 Total pour {service_nom} : {total_service} FCFA")
 
@@ -149,13 +151,23 @@ if submit_button:
             remise += 500
             st.info("🎁 Bonus fidélité : 500 FCFA appliqué automatiquement !")
 
-        # On prend le premier service comme id principal de la commande (peut être amélioré)
         service_id_principal = services_selectionnes[0]["service_id"] if services_selectionnes else None
 
+        # ✅ Insertion commande avec quantité totale
         cursor.execute("""
-            INSERT INTO Commandes (client_id, date_commande, date_retour_prevue, montant_total, remise, adress_livraison, statut, service_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (client_id, date_commande.strftime('%Y-%m-%d'), date_retour_prevue.strftime('%Y-%m-%d'), montant_total, remise, adresse_livraison, statut_commande, service_id_principal))
+            INSERT INTO Commandes (client_id, date_commande, date_retour_prevue, montant_total, remise, adress_livraison, statut, service_id, quantite)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            client_id, 
+            date_commande.strftime('%Y-%m-%d'), 
+            date_retour_prevue.strftime('%Y-%m-%d'), 
+            montant_total, 
+            remise, 
+            adresse_livraison, 
+            statut_commande, 
+            service_id_principal,
+            quantite_totale  # ✅ quantité totale ajoutée ici
+        ))
         commande_id = cursor.lastrowid
 
         # Articles
