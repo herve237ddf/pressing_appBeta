@@ -7,33 +7,6 @@ from datetime import date
 conn = sqlite3.connect("pressing1.db")
 cursor = conn.cursor()
 
-# Création des tables nécessaires
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS Lignes_Commande_Services (
-    ligne_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    commande_id INTEGER,
-    service_id INTEGER,
-    quantite INTEGER,
-    prix_unitaire REAL,
-    FOREIGN KEY (commande_id) REFERENCES Commandes (commande_id),
-    FOREIGN KEY (service_id) REFERENCES Services (service_id)
-)
-''')
-
-cursor.execute('''
-CREATE TABLE IF NOT EXISTS Livraisons (
-    livraison_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    commande_id INTEGER,
-    livreur_id INTEGER,
-    adresse_livraison TEXT,
-    date_livraison TEXT DEFAULT CURRENT_DATE,
-    FOREIGN KEY (commande_id) REFERENCES Commandes (commande_id),
-    FOREIGN KEY (livreur_id) REFERENCES Employes (employe_id)
-)
-''')
-
-conn.commit()
-
 # Configuration de l'application
 st.set_page_config(page_title="Liste des Commandes", layout="centered", initial_sidebar_state="collapsed")
 st.title("📦 Liste des Commandes")
@@ -67,7 +40,10 @@ if commandes:
                 a.type_article, a.matiere, a.couleur, a.marque, a.taille, 
                 a.taches, a.prix, a.instructions_speciales, a.type_article
             FROM Articles a
-            WHERE a.commande_id = ?
+            JOIN Commandes c ON a.commande_id = c.commande_id
+            LEFT JOIN Lignes_Commande_Services ls ON c.commande_id = ls.commande_id
+            LEFT JOIN Services s ON ls.service_id = s.service_id
+            WHERE c.commande_id = ?
         '''
         cursor.execute(query_details, (commande_id,))
         details = cursor.fetchall()
