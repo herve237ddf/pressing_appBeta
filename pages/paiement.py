@@ -85,7 +85,7 @@ if st.button("Rechercher la commande"):
 if st.session_state.commande:
     # Paiement
     st.subheader("💰 Enregistrer le paiement")
-    montant = st.session_state.commande[6]  # Montant de la commande
+    montant = st.session_state.commande[5]  # Montant de la commande
     mode = st.selectbox("Mode de paiement", ["Espèces", "Orange Money", "Mobile Money", "Carte Bancaire"])
 
     if st.button("Valider le paiement"):
