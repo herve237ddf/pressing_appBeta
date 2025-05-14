@@ -151,7 +151,7 @@ if submit_button:
             st.info("🎁 Bonus fidélité : 500 FCFA appliqué automatiquement !")
         #id service
         query = f"SELECT service_id FROM Services WHERE nom_service =?", (services_selectionnes[0])
-        cursor.execute(query, services_selectionnes)
+        cursor.execute(query)
         resultats = cursor.fetchall()
         service_ids = resultats[0][0]
         # Commande
