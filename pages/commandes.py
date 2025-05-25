@@ -38,7 +38,7 @@ if commandes:
         query_details = '''
             SELECT 
                 a.type_article, a.matiere, a.couleur, a.marque, a.taille, 
-                a.taches, a.prix, a.instructions_speciales, a.type_article
+                a.taches, c.montant_total,c.date_retour_prevue, a.instructions_speciales
             FROM Articles a
             JOIN Commandes c ON a.commande_id = c.commande_id
             LEFT JOIN Lignes_Commande_Services ls ON c.commande_id = ls.commande_id
@@ -51,8 +51,8 @@ if commandes:
         if details:
             # Convertir les résultats en DataFrame
             df_details = pd.DataFrame(details, columns=[
-                "Type Article", "Matière", "Couleur", "Marque", "Taille", 
-                "Taches", "Prix", "Instructions Spéciales", "Type Article"
+            "Type Article", "Matière", "Couleur", "Marque", "Taille", 
+            "Taches", "Prix","Date retour prevue", "Instructions Spéciales"
             ])
             st.dataframe(df_details)
         else:
@@ -111,7 +111,7 @@ except Exception as e:
     st.error(f"Erreur lors du chargement des adresses : {e}")
 
 # Livrer une commande
-st.subheader("📤 Livrer une commande terminée")
+st.subheader("📤 Command livrer")
 
 commandes_terminees = pd.read_sql_query('''
     SELECT c.commande_id, cl.adresse
@@ -161,3 +161,39 @@ try:
         st.dataframe(df_livraisons)
 except Exception as e:
     st.error(f"Erreur lors du chargement des livraisons : {e}")
+
+    
+
+st.subheader("📋 Commandes livrées par livreur")
+try:
+    df_livreur_commandes = pd.read_sql_query('''
+        SELECT e.nom AS Livreurs, GROUP_CONCAT(l.commande_id, ', ') AS Commandes
+        FROM Livraisons l
+        JOIN Employes e ON l.employe_id = e.employe_id
+        GROUP BY e.nom
+        ORDER BY e.nom
+    ''', conn)
+    if df_livreur_commandes.empty:
+        st.info("Aucune livraison enregistrée pour les livreurs.")
+    else:
+        st.dataframe(df_livreur_commandes)
+except Exception as e:
+    st.error(f"Erreur lors du chargement des commandes par livreur : {e}")
+
+st.subheader("📝 Commande terminé et non livrer")
+
+# Sélectionner les commandes terminées non encore livrées
+commandes_terminees_a_assigner = pd.read_sql_query('''
+    SELECT c.commande_id, c.adress_livraison, c.date_retour_prevue
+    FROM Commandes c
+    WHERE c.statut = 'Terminé'
+      AND c.commande_id NOT IN (SELECT commande_id FROM Livraisons)
+
+''', conn)
+if commandes_terminees_a_assigner.empty:
+    st.info("Toutes les commandes terminées ont été livrées.")
+else:
+    st.dataframe(commandes_terminees_a_assigner, use_container_width=True)
+
+
+

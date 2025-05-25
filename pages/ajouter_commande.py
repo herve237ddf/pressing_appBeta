@@ -59,6 +59,23 @@ if type_client == "Client existant":
 client_data = st.session_state.client_data
 
 # Formulaire principal
+# Sélection des services (hors formulaire)
+selected_services = st.multiselect("🛠️ Sélectionner les Services", noms_services_disponibles)
+if "selected_services" not in st.session_state:
+    st.session_state.selected_services = []
+st.session_state.selected_services = selected_services
+
+# Affichage dynamique des champs pour chaque service sélectionné (hors formulaire)
+for service_nom in selected_services:
+    st.subheader(f"🧺 {service_nom}")
+    st.number_input(f"Quantité", min_value=1, step=1, key=f"qte_{service_nom}")
+    st.text_input("Type d'article", key=f"type_{service_nom}")
+    st.text_input("Matière", key=f"matiere_{service_nom}")
+    st.text_input("Couleur", key=f"couleur_{service_nom}")
+    st.text_input("Marque", key=f"marque_{service_nom}")
+    st.text_input("Taille", key=f"taille_{service_nom}")
+
+# Formulaire principal (ne contient plus la boucle sur les services)
 with st.form(key="order_form"):
     with st.expander("📋 Informations Client", expanded=True):
         if client_data:
@@ -73,28 +90,29 @@ with st.form(key="order_form"):
 
     with st.expander("📦 Détails de la Commande", expanded=True):
         date_commande = st.date_input("Date de Commande", value=datetime.today())
-        date_retour_prevue = st.date_input("Date de Retour Prévue")
+        date_retour_prevue = st.date_input("Date de Retour Prévue" , min_value=date_commande)
+        if date_retour_prevue < date_commande:
+            st.error("❗ La date de retour prévue ne peut pas être antérieure à la date de commande.")
+            date_retour_prevue = date_commande
         adresse_livraison = st.text_input("Adresse de Livraison")
         statut_commande = st.selectbox("Statut", ["En attente", "En cours", "Terminé", "Annulé"])
 
-        selected_services = st.multiselect("🛠️ Sélectionner les Services", noms_services_disponibles)
+        # Calculs et affichage des totaux
         services_selectionnes = []
         montant_total = 0
-        quantite_totale = 0  # 🔧 Nouvelle variable
-
+        quantite_totale = 0
         for service_nom in selected_services:
-            st.subheader(f"🧺 {service_nom}")
-            quantite = st.number_input(f"Quantité", min_value=1, step=1, key=f"qte_{service_nom}")
-            type_article = st.text_input("Type d'article", key=f"type_{service_nom}")
-            matiere = st.text_input("Matière", key=f"matiere_{service_nom}")
-            couleur = st.text_input("Couleur", key=f"couleur_{service_nom}")
-            marque = st.text_input("Marque", key=f"marque_{service_nom}")
-            taille = st.text_input("Taille", key=f"taille_{service_nom}")
+            quantite = st.session_state.get(f"qte_{service_nom}", 1)
+            type_article = st.session_state.get(f"type_{service_nom}", "")
+            matiere = st.session_state.get(f"matiere_{service_nom}", "")
+            couleur = st.session_state.get(f"couleur_{service_nom}", "")
+            marque = st.session_state.get(f"marque_{service_nom}", "")
+            taille = st.session_state.get(f"taille_{service_nom}", "")
 
             service_id, prix_unitaire = service_dict[service_nom]
             total_service = quantite * prix_unitaire
             montant_total += total_service
-            quantite_totale += quantite  # ✅ Ajout au total
+            quantite_totale += quantite
 
             st.info(f"💰 Total pour {service_nom} : {total_service} FCFA")
 
@@ -114,6 +132,7 @@ with st.form(key="order_form"):
         st.success(f"💵 Montant Final : {montant_final} FCFA")
 
     submit_button = st.form_submit_button("✅ Enregistrer la Commande")
+# ...existing code...
 
 # Traitement de l'enregistrement
 if submit_button:
@@ -161,7 +180,7 @@ if submit_button:
             client_id, 
             date_commande.strftime('%Y-%m-%d'), 
             date_retour_prevue.strftime('%Y-%m-%d'), 
-            montant_total, 
+            montant_final, 
             remise, 
             adresse_livraison, 
             statut_commande, 

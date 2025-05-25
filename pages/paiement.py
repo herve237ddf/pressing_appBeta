@@ -6,7 +6,7 @@ from datetime import datetime
 st.set_page_config(page_title="Nouveau paiement", layout="centered")
 
 # Connexion à la base de données
-conn = sqlite3.connect("pressing1.db")
+conn = sqlite3.connect("pressing1.db", check_same_thread=False)
 cursor = conn.cursor()
 
 # Créer la table Paiement si elle n'existe pas
@@ -39,8 +39,8 @@ st.subheader("Rechercher une commande")
 id_commande = st.number_input("Entrer l'identifiant de la commande", min_value=1, step=1)
 
 if st.button("Rechercher la commande"):
-    # Récupérer les infos de la commande
-    cursor.execute("SELECT * FROM Commandes WHERE commande_id = ?", (id_commande,))
+    # Récupérer les infos de la commande (on sélectionne explicitement les colonnes)
+    cursor.execute("SELECT commande_id, client_id, date_commande, montant_total, statut FROM Commandes WHERE commande_id = ?", (id_commande,))
     commande = cursor.fetchone()
 
     if commande:
@@ -65,26 +65,31 @@ if st.button("Rechercher la commande"):
 
             # Enregistrer les informations du client dans la session
             st.session_state.client = client
+        else:
+            st.session_state.client = None
 
         # Récupérer les articles de la commande
         cursor.execute("""
-            SELECT matiere, couleur, marque, taille, taches, prix, instructions_speciales, type_article
+            SELECT type_article, matiere, couleur, marque, taille, taches, prix, instructions_speciales
             FROM Articles 
             WHERE commande_id = ?""", (id_commande,))
         articles = cursor.fetchall()
         if articles:
             st.subheader("🧺 Détail de la commande")
             for art in articles:
-                st.markdown(f"- **{art[0]}** | couleur : {art[1]} | marque : {art[2]}| taille : {art[3]} | taches : {art[4]} | prix : {art[5]} | instructions : {art[6]} | type : {art[7]}")
-
-            # Enregistrer les articles dans la session
+                st.markdown(f"- **{art[0]}** | matière : {art[1]} | couleur : {art[2]} | marque : {art[3]} | taille : {art[4]} | taches : {art[5]} | prix : {art[6]} | instructions : {art[7]}")
             st.session_state.articles = articles
+        else:
+            st.session_state.articles = None
 
     else:
         st.error("❌ Commande non trouvée.")
+        st.session_state.commande = None
+        st.session_state.client = None
+        st.session_state.articles = None
 
 # Section pour le paiement
-if st.session_state.commande:
+if st.session_state.commande and st.session_state.client:
     st.subheader("💰 Enregistrer le paiement")
     montant = st.session_state.commande[3]  # Montant de la commande
     mode = st.selectbox("Mode de paiement", ["Espèces", "Orange Money", "Mobile Money", "Carte Bancaire"])
@@ -120,9 +125,12 @@ if st.session_state.commande:
         st.write("**Adresse :**", st.session_state.client[2])
 
         # Détails des articles
-        st.write("**Détails des articles :**")
-        for art in st.session_state.articles:
-            st.write(f"- {art[0]} | Tache : {art[4]} | Prix : {art[5]}")
+        if st.session_state.articles:
+            st.write("**Détails des articles :**")
+            for art in st.session_state.articles:
+                st.write(f"- {art[0]} | Tache : {art[5]} | Prix : {art[6]}")
+        else:
+            st.write("Aucun article pour cette commande.")
 
 # Affichage de la liste des paiements
 st.subheader("🧾 Liste des paiements effectués")
@@ -132,5 +140,3 @@ if st.session_state.paiements:
 else:
     st.write("Aucun paiement effectué pour le moment.")
 
-# Fermeture de la connexion
-conn.close()
